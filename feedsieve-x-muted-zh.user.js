@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         FeedSieve → X Muted Words Manager (中文词库)
 // @namespace    feedsieve-x-muted-zh
-// @version      4.1.2
+// @version      4.1.3
 // @description  中文 X 隐藏词油猴脚本：内置词库、去重、15条分批、暂停/继续、自定义秒数、关键词管理
 // @match        https://x.com/*
 // @match        https://www.x.com/*
@@ -17,7 +17,16 @@
 // @supportURL   https://github.com/uumego/feedsieve-x-muted-words/issues
 // ==/UserScript==
 (()=>{'use strict';
-const V='4.1.2',S='2026.09.13.2-zh',P='fsxz',T={"ready":"准备就绪","scan":"正在扫描 X 已隐藏词…","active":"当前启用","batch":"每批","next":"下一批间隔","sec":"秒","min":"最少","start":"开始 / 继续","running":"自动运行中","pause":"暂停","once":"只运行一批（15条）","manage":"管理关键词","scanbtn":"扫描全部已添加","local":"查看本地进度","mgr":"关键词管理","search":"搜索关键词","customph":"添加自定义关键词：一行一个，也支持逗号分隔","add":"添加","export":"导出启用词","reset":"恢复内置默认状态","close":"关闭","defaulton":"内置·默认开","defaultoff":"内置·默认关","custom":"自定义","enable":"启用","disable":"停用","delete":"删除","paused":"已暂停，进度已保存","all":"全部关键词已经处理完成","failpause":"连续失败，已自动暂停","added":"已添加自定义关键词","resetq":"恢复所有内置关键词默认状态？自定义关键词不会删除。"},W=`18禁
+function regMenu(name,fn){try{if(typeof GM_registerMenuCommand==='function')return GM_registerMenuCommand(name,fn);if(typeof GM!=='undefined'&&typeof GM.registerMenuCommand==='function')return GM.registerMenuCommand(name,fn)}catch(e){console.warn('[FSX] menu registration failed',e)}}
+function goMuted(){location.href='https://x.com/settings/muted_keywords'}
+regMenu('FSX：打开 X 已隐藏字词页面',goMuted);
+regMenu('FSX：显示 / 恢复控制面板',()=>target()?panel():goMuted());
+regMenu('FSX：暂停自动添加',()=>pause());
+regMenu('FSX：管理关键词',()=>target()?manager():goMuted());
+function launcher(){if(!document.body||document.getElementById('fsxz-launcher'))return;let b=document.createElement('button');b.id='fsxz-launcher';b.textContent='FSX';b.title='FeedSieve → X 关键词管理';b.style='position:fixed;right:18px;bottom:18px;z-index:2147483647;background:#1d9bf0;color:#fff;border:0;border-radius:999px;width:48px;height:48px;font:bold 13px Arial;box-shadow:0 4px 18px #0006;cursor:pointer';b.onclick=()=>target()?panel():goMuted();document.body.appendChild(b)}
+document.addEventListener('DOMContentLoaded',launcher,{once:true});
+setInterval(launcher,700);
+const V='4.1.3',S='2026.09.13.2-zh',P='fsxz',T={"ready":"准备就绪","scan":"正在扫描 X 已隐藏词…","active":"当前启用","batch":"每批","next":"下一批间隔","sec":"秒","min":"最少","start":"开始 / 继续","running":"自动运行中","pause":"暂停","once":"只运行一批（15条）","manage":"管理关键词","scanbtn":"扫描全部已添加","local":"查看本地进度","mgr":"关键词管理","search":"搜索关键词","customph":"添加自定义关键词：一行一个，也支持逗号分隔","add":"添加","export":"导出启用词","reset":"恢复内置默认状态","close":"关闭","defaulton":"内置·默认开","defaultoff":"内置·默认关","custom":"自定义","enable":"启用","disable":"停用","delete":"删除","paused":"已暂停，进度已保存","all":"全部关键词已经处理完成","failpause":"连续失败，已自动暂停","added":"已添加自定义关键词","resetq":"恢复所有内置关键词默认状态？自定义关键词不会删除。"},W=`18禁
 99bb
 AV女优
 AV男优
