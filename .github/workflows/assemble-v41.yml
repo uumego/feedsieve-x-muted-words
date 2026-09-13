@@ -1,0 +1,36 @@
+name: Assemble v4.1 userscript
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/v41-chunks/**'
+      - '.github/workflows/assemble-v41.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  assemble:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Assemble and verify userscript
+        shell: bash
+        run: |
+          cat .github/v41-chunks/part-* | tr -d '\n\r' | base64 -d > feedsieve-x-muted.user.js
+          node --check feedsieve-x-muted.user.js
+          grep -q '@version      4.1.0' feedsieve-x-muted.user.js
+          if grep -q '@resource' feedsieve-x-muted.user.js; then
+            echo 'Unexpected @resource in v4.1' >&2
+            exit 1
+          fi
+          rm -rf .github/v41-chunks
+          rm -f .github/workflows/assemble-v41.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Release v4.1.0 single-file userscript'
+          git push
