@@ -1,19 +1,22 @@
 // ==UserScript==
 // @name         FeedSieve → X Muted Words Manager (English Pack)
 // @namespace    feedsieve-x-muted-en
-// @version      4.1.0
+// @version      4.1.1
 // @description  English X muted-word Tampermonkey script: built-in pack, dedupe, 15-word batches, pause/resume, custom seconds and keyword manager
-// @match        https://x.com/settings/muted_keywords*
-// @match        https://x.com/settings/add_muted_keyword*
+// @match        https://x.com/*
+// @match        https://www.x.com/*
+// @match        https://twitter.com/*
+// @match        https://www.twitter.com/*
 // @grant        GM_getValue
 // @grant        GM_setValue
 // @grant        GM_deleteValue
+// @grant        GM_registerMenuCommand
 // @run-at       document-idle
 // @homepageURL  https://github.com/uumego/feedsieve-x-muted-words
 // @supportURL   https://github.com/uumego/feedsieve-x-muted-words/issues
 // ==/UserScript==
 (()=>{'use strict';
-const V='4.1.0',S='2026.09.13.2-en',P='fsxe',T={"ready":"Ready","scan":"Scanning existing X muted words…","active":"Active","batch":"Batch","next":"Next-batch interval","sec":"sec","min":"min","start":"Start / Resume","running":"Auto running","pause":"Pause","once":"Run one batch (15)","manage":"Manage keywords","scanbtn":"Scan existing muted words","local":"View local progress","mgr":"Keyword Manager","search":"Search keywords","customph":"Add custom keywords: one per line or comma-separated","add":"Add","export":"Export active TXT","reset":"Reset built-in defaults","close":"Close","defaulton":"Built-in · default on","defaultoff":"Built-in · default off","custom":"Custom","enable":"Enable","disable":"Disable","delete":"Delete","paused":"Paused; progress saved","all":"All enabled keywords have been processed","failpause":"Repeated failures; auto-paused","added":"Custom keywords added","resetq":"Reset all built-in keywords to defaults? Custom keywords will remain."},W=`free nudes
+const V='4.1.1',S='2026.09.13.2-en',P='fsxe',T={"ready":"Ready","scan":"Scanning existing X muted words…","active":"Active","batch":"Batch","next":"Next-batch interval","sec":"sec","min":"min","start":"Start / Resume","running":"Auto running","pause":"Pause","once":"Run one batch (15)","manage":"Manage keywords","scanbtn":"Scan existing muted words","local":"View local progress","mgr":"Keyword Manager","search":"Search keywords","customph":"Add custom keywords: one per line or comma-separated","add":"Add","export":"Export active TXT","reset":"Reset built-in defaults","close":"Close","defaulton":"Built-in · default on","defaultoff":"Built-in · default off","custom":"Custom","enable":"Enable","disable":"Disable","delete":"Delete","paused":"Paused; progress saved","all":"All enabled keywords have been processed","failpause":"Repeated failures; auto-paused","added":"Custom keywords added","resetq":"Reset all built-in keywords to defaults? Custom keywords will remain."},W=`free nudes
 nude pics
 nude pictures
 nude videos
@@ -331,5 +334,10 @@ function render(){let q=n(document.getElementById(P+'-search').value),rows=W.map
 document.getElementById(P+'-close').onclick=()=>o.remove();document.getElementById(P+'-search').oninput=render;document.getElementById(P+'-add').onclick=()=>{let e=document.getElementById(P+'-addtext'),a=e.value.split(/[\n,，;；]+/).map(cl).filter(Boolean),b=custom();ss('custom',uniq([...b,...a]));e.value='';status(T.added);render();draw()};document.getElementById(P+'-export').onclick=()=>{let a=document.createElement('a'),u=URL.createObjectURL(new Blob([active().join('\n')],{type:'text/plain;charset=utf-8'}));a.href=u;a.download='x-muted-en-'+S+'.txt';a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)};document.getElementById(P+'-reset').onclick=()=>{if(confirm(T.resetq)){del('off');del('on');render();draw()}};render()}
 function draw(){let e=document.getElementById(P+'-panel');if(!e)return;let a=gs('auto',false),s=document.getElementById(P+'-start'),p=document.getElementById(P+'-pause'),i=document.getElementById(P+'-int');s.textContent=a?T.running:T.start;s.disabled=a||busy;p.disabled=!a;if(i&&document.activeElement!==i)i.value=geti();document.getElementById(P+'-meta').textContent=`v${V} · ${T.active} ${active().length} · ${T.batch} ${C.B}`}
 function panel(){if(document.getElementById(P+'-panel'))return;let e=document.createElement('div');e.id=P+'-panel';e.style='position:fixed;right:22px;bottom:22px;width:340px;padding:15px;z-index:9999999;border-radius:16px;background:#111;color:#fff;font-family:Arial,sans-serif;box-shadow:0 8px 30px #0006';e.innerHTML=`<b>FeedSieve → X v${V}</b><div id="${P}-meta" style="font-size:11px;color:#888;margin:4px 0"></div><div id="${P}-status" style="white-space:pre-line;font-size:13px;margin:8px 0">${T.ready}</div><div style="display:flex;gap:7px;align-items:center"><span>${T.next}</span><input id="${P}-int" type="number" min="${C.min}" max="${C.max}" style="width:75px"><span>${T.sec}</span></div><div style="display:flex;gap:7px;margin:8px 0"><button id="${P}-start" style="flex:1">${T.start}</button><button id="${P}-pause">${T.pause}</button></div><button id="${P}-once">${T.once}</button> <button id="${P}-manage">${T.manage}</button><div style="margin-top:7px"><button id="${P}-scan">${T.scanbtn}</button> <button id="${P}-local">${T.local}</button></div>`;document.body.appendChild(e);document.getElementById(P+'-start').onclick=start;document.getElementById(P+'-pause').onclick=pause;document.getElementById(P+'-once').onclick=()=>batch(false);document.getElementById(P+'-manage').onclick=manager;document.getElementById(P+'-scan').onclick=async()=>{if(busy)return;busy=true;try{let m=await scan(status);status(T.scanbtn+': '+m.size)}finally{busy=false;draw()}};document.getElementById(P+'-local').onclick=()=>status(`OK: ${success().length} · Failed: ${(gs('bad',[])||[]).length} · ${T.active}: ${active().length}`);let i=document.getElementById(P+'-int');i.value=geti();i.onchange=()=>{i.value=seti(i.value)};draw()}
-panel();setInterval(panel,1500);setInterval(draw,1000);window.FSX={version:V,active,scan,start,pause,manager,setIntervalSeconds:seti,builtin:()=>[...W]};if(gs('auto',false))setTimeout(start,1800);
+function istarget(){return /\/settings\/(?:muted_keywords|add_muted_keyword)/.test(location.pathname)}
+function mount(){if(istarget())panel();else document.getElementById(P+'-panel')?.remove()}
+GM_registerMenuCommand('Open X muted words page',()=>{location.href='https://x.com/settings/muted_keywords'});
+GM_registerMenuCommand('Show / restore control panel',()=>{if(istarget())panel();else location.href='https://x.com/settings/muted_keywords'});
+GM_registerMenuCommand('Pause auto import',pause);
+mount();setInterval(mount,1000);setInterval(()=>{if(istarget())draw()},1000);window.FSX={version:V,active,scan,start,pause,manager,panel,setIntervalSeconds:seti,builtin:()=>[...W]};if(istarget()&&gs('auto',false))setTimeout(start,1800);
 })();
