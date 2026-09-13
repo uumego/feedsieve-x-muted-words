@@ -1,64 +1,105 @@
-# FeedSieve → X Muted Words
+# FeedSieve → X 批量隐藏词
 
-A Tampermonkey userscript for importing FeedSieve keyword lists into X (Twitter) muted words.
+这是一个 **Tampermonkey（油猴）用户脚本**，用于把 FeedSieve 的关键词词库批量导入到 X（Twitter）的“已隐藏的字词”中。
 
-## Features
+> 这不是 Chrome 扩展，也不是 X 官方功能。它依赖 Tampermonkey / Violentmonkey 这类用户脚本管理器运行。
 
-- Reads the latest keyword list from FeedSieve.
-- Scans existing muted words on X before importing.
-- Skips words that are already present.
-- Uses normalized matching to reduce duplicate imports.
-- Imports in small batches to reduce the chance of hitting X rate limits.
-- Saves local progress so you can resume later.
-- Stops automatically after repeated failures.
-- Includes debugging helpers for inspecting visible muted words and saved progress.
+## 功能
 
-## Requirements
+- 自动读取 FeedSieve 最新关键词词库
+- 自动扫描 X 当前已经添加的隐藏词
+- 自动排除已经存在的词，避免重复添加
+- 对大小写、空格及“关键词 + 中文说明”这类变体做归一化匹配
+- 每次只添加一小批，降低触发 X 临时限制的概率
+- 自动保存本地成功/失败记录，方便中断后继续
+- 连续失败时自动停止，避免持续撞限流
+- 提供“扫描全部已添加”“查看当前可见词”“查看本地进度”等调试功能
 
-- Chrome / Edge / Chromium-based browser
-- Tampermonkey
-- Logged-in X account
+## 使用环境
 
-## Install
+- Chrome / Edge / 其他 Chromium 浏览器
+- 已安装 Tampermonkey（油猴）或兼容的用户脚本管理器
+- 已登录 X 账号
 
-1. Install Tampermonkey in your browser.
-2. Create a new userscript.
-3. Replace the default content with `feedsieve-x-muted.user.js`.
-4. Save the script.
-5. Open X → Settings and privacy → Privacy and safety → Mute and block → Muted words.
-6. Use the floating panel in the lower-right corner.
+## 安装方法
 
-## Recommended workflow
+### 方法一：手动安装
 
-1. Open the X muted words page.
-2. Click **Scan all existing** first.
-3. Confirm that existing muted words are detected correctly.
-4. Click **Scan and add next batch**.
-5. If X starts rejecting additions, stop and wait until manual additions work again before continuing.
+1. 安装 Tampermonkey（油猴）。
+2. 打开 Tampermonkey，选择“添加新脚本”。
+3. 删除默认内容。
+4. 复制本仓库中的 `feedsieve-x-muted.user.js` 全部内容并粘贴进去。
+5. 保存脚本。
+6. 打开 X：
+   `设置和隐私 → 隐私和安全 → 隐藏并屏蔽 → 已隐藏的字词`
+7. 页面右下角会出现 **FeedSieve → X v3.1** 操作面板。
 
-## Rate limits
+## 推荐使用流程
 
-X does not publicly document a specific muted-word insertion limit. In practice, rapid repeated additions may trigger a temporary restriction. This script intentionally uses small batches and delays, and stops after repeated failures.
+1. 先打开 X 的“已隐藏的字词”页面。
+2. 点击 **扫描全部已添加**，确认脚本能正确识别当前已有隐藏词。
+3. 点击 **扫描并添加下一批**。
+4. 脚本会先把 FeedSieve 词库与 X 当前已有词进行比对，再只添加缺少的词。
+5. 如果 X 开始拒绝添加，脚本会在连续失败后自动停止。
+6. 等到你手动添加恢复正常后，再继续下一批。
 
-Do not aggressively reduce the delay or increase the batch size unless you understand the risk of triggering temporary limits.
+## 去重逻辑
 
-## Matching behavior
+脚本会同时使用完整文本和简化关键词进行比较，尽量避免因为格式差异造成重复添加。
 
-The script compares both normalized full text and a simplified keyword key. This helps treat variants such as these as equivalent when appropriate:
+例如下面这些会尽量视为同一类关键词：
 
 - `adult`
 - `ADULT`
 - `adult  成年人`
 
-## Privacy
+脚本在真正执行添加前还会做一次二次检查，进一步降低重复添加的概率。
 
-The script runs locally in your browser. It reads the FeedSieve keyword page and interacts with X's muted-word settings page. It does not require your X password or transmit account credentials to this repository.
+## 关于 X 的添加限制
 
-## Disclaimer
+X 并没有公开说明“隐藏词”具体允许连续添加多少条。
 
-This project is an independent userscript and is not affiliated with, endorsed by, or sponsored by X Corp. or FeedSieve.
+实际使用中，连续快速添加较多隐藏词后，可能出现临时无法继续添加的情况，甚至手动添加也会暂时失败。因此本脚本默认：
 
-Website structures and limits may change at any time, which can break automation.
+- 每批最多添加 15 条
+- 每条之间随机等待几秒
+- 连续失败 2 次后自动停止
+
+不建议为了追求速度大幅提高批量数量或缩短间隔。
+
+## 本地进度
+
+脚本会在 Tampermonkey 本地存储中记录：
+
+- 已成功添加的词
+- 添加失败的词
+- 最近一次运行时间
+
+这些记录只用于续传和去重。点击“清除本地记录”只会清除脚本自己的记录，不会删除 X 里已经存在的隐藏词。
+
+## 隐私说明
+
+脚本在你的浏览器本地运行。
+
+它只会：
+
+- 读取 FeedSieve 的关键词页面
+- 读取并操作 X 的“已隐藏的字词”设置页面
+- 在 Tampermonkey 本地存储中保存进度
+
+它不需要你的 X 密码，也不会把账号密码、Cookie 或登录凭据上传到本仓库。
+
+## 免责声明
+
+本项目是独立第三方 Tampermonkey 用户脚本，与 X Corp. 和 FeedSieve 均无官方隶属、合作或背书关系。
+
+X 和 FeedSieve 的网页结构随时可能变化，因此未来可能需要更新脚本选择器或扫描逻辑。
+
+请根据自己的账号情况合理使用，避免高频自动化操作。
+
+## 版本
+
+当前主版本：`v3.1.0`
 
 ## License
 
