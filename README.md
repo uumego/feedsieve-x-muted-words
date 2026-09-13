@@ -1,116 +1,60 @@
-# FeedSieve → X 批量隐藏词
+# FeedSieve → X Muted Words Manager / X 批量隐藏词管理器
 
-这是一个 **Tampermonkey（油猴）用户脚本**，用于在 X（Twitter）的“已隐藏的字词”中批量维护关键词。
+**Tampermonkey（油猴）用户脚本 / Tampermonkey userscripts** for importing and managing X (Twitter) muted words. 这不是 X 官方功能，也不是 Chrome 扩展。
 
-> 这不是 Chrome 扩展，也不是 X 官方功能。脚本在浏览器本地运行，需要 Tampermonkey / Violentmonkey 等用户脚本管理器。
+## 选择版本 / Choose an edition
 
-## v4.1 主要变化
+- **中文词库版 / Chinese-focused:** [`feedsieve-x-muted-zh.user.js`](./feedsieve-x-muted-zh.user.js) — 面向中文用户与中文社区，使用 v4.1 当前确认的单文件词库。根据用户要求，直接发布当前词集，不再因之前发现的缺词差异阻塞更新。
+- **English pack:** [`feedsieve-x-muted-en.user.js`](./feedsieve-x-muted-en.user.js) — for Western / English-speaking users. It focuses on adult-bait/promo spam, profile/DM funnels, hookup/escort bait, creator-platform promos, and crypto giveaway/airdrop scams. Broad English terms are included but disabled by default.
 
-- **真正单文件**：关键词直接写入 `feedsieve-x-muted.user.js`，不再使用 `@resource`、不访问 FeedSieve 获取词库，也不会自动更新上游关键词。
-- 内置词库固定参考 FeedSieve `2026.09.13.2` 快照。
-- 仅内置可以直接映射为 X 单个 muted word 的 literal phrase：**646 条**。
-- 其中 **135 条宽泛/高误伤风险词默认关闭**，默认启用 **511 条**；可以在关键词管理中自行启用。
-- **12 条 `terms/max_gap` 组合规则排除**，因为 X 原生“已隐藏的字词”无法表达这种组合匹配。
-- 支持添加、删除自定义关键词；内置词支持启用/停用、搜索和恢复默认状态。
-- 每批最多添加 **15 条**。
-- 一批完成后可以自动继续，**下一批等待时间以秒为单位自定义**。
-- 默认自动继续间隔 **300 秒**，允许范围 **60–86400 秒**。
-- 支持 **暂停 / 继续**；没有暂停时刷新页面后会恢复自动流程。
-- 连续失败 2 次会自动暂停，避免持续提交。
+> 建议只启用其中一个脚本。 / Enable only one edition at a time.
 
-## 为什么不是 760 个 X 隐藏词？
+## 功能 / Features
 
-FeedSieve `2026.09.13.2` 的 manifest 记录的是上游检测规则总数，其中包含组合检测等并不能一对一转换成 X 原生“已隐藏的字词”的规则。
+两个版本功能一致：
 
-v4.1 只取其中可以安全直接转换成**单个字词/短语**的 literal phrase，并排除 `同城 + 上门`、`福利 + 主页` 等 `terms/max_gap` 组合规则。因此脚本内置的是 646 个可直接用于 X 的词/短语，而不是简单把上游规则总数当作 X muted words 数量。
+- 关键词直接内置在 `.user.js`，运行时**不自动获取/更新词库**。
+- 每批最多添加 **15** 条。
+- 每批开始前扫描 X 已有隐藏词并去重。
+- 自动继续间隔可以自行输入，**单位为秒**。
+- 默认间隔 **300 秒**，最低 **60 秒**。
+- 支持 **暂停 / 继续**；进度保存在 Tampermonkey 本地。
+- 连续失败 2 次会自动暂停，不尝试绕过 X 限流。
+- 关键词管理：搜索、启用/停用内置词、添加/删除自定义词、导出当前启用词。
 
-## 安装
+Both editions use the same workflow: scan existing muted words → add up to 15 → wait the user-defined number of seconds → scan again → continue until complete or paused.
 
-1. 安装 Tampermonkey（油猴）或兼容的用户脚本管理器。
-2. 打开本仓库的 `feedsieve-x-muted.user.js`。
-3. 将脚本安装到 Tampermonkey。
-4. 登录 X，打开：`设置和隐私 → 隐私和安全 → 隐藏并屏蔽 → 已隐藏的字词`。
-5. 页面右下角会出现 **FeedSieve → X v4.1** 面板。
+## 安装 / Installation
 
-## 自动运行
+1. 安装 Tampermonkey。
+2. 打开需要的 `.user.js` 文件。
+3. 点击 GitHub **Raw**。
+4. 在 Tampermonkey 安装页面点击安装。
+5. 登录 X，打开 `Settings → Privacy and safety → Mute and block → Muted words`。
 
-面板中可以设置 **“下一批间隔”**，单位是秒。
+English: install Tampermonkey, open the desired script above, click **Raw**, install it, then open X's **Muted words** settings page.
 
-默认：`300` 秒。
+## 后台运行 / Background use
 
-运行逻辑：
+X 的设置标签页可以放到后台，不需要一直盯着，但标签页必须保持打开。浏览器的“睡眠标签页/内存节省”可能暂停计时器；电脑睡眠或休眠时也不会继续执行。
 
-1. 扫描 X 当前已经存在的隐藏词。
-2. 排除已经存在的词和本地已成功记录。
-3. 本批最多添加 15 条，每条之间随机等待约 3.5–5.5 秒。
-4. 本批结束后按你设置的秒数倒计时。
-5. 倒计时结束后重新扫描 X，再开始下一批。
-6. 一直循环，直到全部完成、你点击“暂停”，或连续失败 2 次自动暂停。
+The X settings tab may remain in the background, but it must stay open. Browser tab sleeping/memory-saver features can suspend timers.
 
-修改秒数时会立即保存。如果正在倒计时，新的秒数会从修改时重新计算下一批时间。
+## 限流 / Rate limits
 
-### 可以放在后台吗？
+脚本不会绕过 X 的限制。若连续保存失败会自动暂停。如果连手动添加也失败，请等 X 恢复后再继续。
 
-可以把这个 X 标签页放到后台，不需要一直显示在前台，但：
+The script does not bypass X rate limits or anti-abuse protections. If manual additions fail too, pause and resume later.
 
-- **不要关闭这个标签页**。
-- 不要把这个标签页导航到其他页面。
-- 浏览器的“内存节省 / 睡眠标签页”可能暂停后台计时，建议把 `x.com` 加到始终保持活动列表。
-- 电脑休眠时脚本不会继续；恢复后会继续处理。
-- 后台标签页的 JavaScript 定时器可能被浏览器延迟，因此实际触发时间可能比设置值稍晚。
+## Privacy / 隐私
 
-## 关键词管理
+关键词、自定义设置、成功/失败记录和自动继续间隔均保存在 Tampermonkey 本地。v4.1 不需要运行时访问 FeedSieve 来下载词库。
 
-点击 **“管理关键词”** 可以：
+Keyword settings and progress are stored locally by Tampermonkey. v4.1 does not fetch keyword-pack updates from FeedSieve at runtime.
 
-- 搜索全部内置和自定义词。
-- 添加自定义关键词，一行一个，也支持逗号/分号分隔。
-- 删除自定义关键词。
-- 启用或停用任意内置关键词。
-- 一键恢复内置词的默认启用/关闭状态。
-- 导出当前启用关键词为 TXT。
+## Disclaimer / 免责声明
 
-内置词被“停用”只表示以后不再自动添加，**不会从 X 已经存在的隐藏词里删除**。
-
-## 默认关闭词
-
-135 条容易误伤正常讨论的词默认关闭，例如医学、新闻、摄影、身份描述和较宽泛英文短语。它们仍保留在管理器里，可以自行开启。
-
-例如：`写真`、`自拍`、`空姐`、`性感`、`强奸`、`生殖器`、`阴道`、`adult`、`act fast`、`no kyc` 等。
-
-## 去重
-
-脚本每批开始前都会重新扫描 X，并结合旧版本本地成功记录进行去重。
-
-还会处理一些格式差异，例如大小写、不可见字符，以及历史数据中的 `adult  成年人` 这类双空格说明格式。真正保存前还有第二次重复检查。
-
-## 从旧版本升级
-
-v4.1 会尽量迁移：
-
-- v4 自定义关键词；
-- v4 停用的内置词；
-- v3 / v3.1 / v4 的成功添加记录。
-
-因此升级脚本后通常不需要从头开始。
-
-## 隐私
-
-脚本在本机 Tampermonkey 环境中运行，不需要 X 密码，也不会上传你的账号密码、Cookie、登录凭据或自定义关键词。
-
-v4.1 运行时不需要访问 FeedSieve 词库服务器。
-
-## 使用提醒
-
-X 没有公开“已隐藏的字词”的具体连续添加限额。高频添加可能导致临时无法保存，所以脚本保留了分批、等待、失败自动暂停等保护。
-
-不建议将等待时间设置得过短；脚本最低限制为 60 秒。
-
-## 版本
-
-当前版本：**v4.1.0**
-
-词库参考版本：`2026.09.13.2`
+Independent project; not affiliated with or endorsed by X Corp. or FeedSieve. 本项目为独立工具，与 X Corp. 或 FeedSieve 无官方合作或隶属关系。
 
 ## License
 
