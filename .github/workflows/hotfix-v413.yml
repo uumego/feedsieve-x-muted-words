@@ -1,0 +1,46 @@
+name: Hotfix v4.1.4 panel init
+
+on:
+  push:
+    paths:
+      - .github/workflows/hotfix-v413.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Fix menu callbacks and document-start panel init
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('feedsieve-x-muted-zh.user.js')
+          s=p.read_text(encoding='utf-8')
+          s=s.replace('// @version      4.1.3','// @version      4.1.4',1)
+          s=s.replace("const V='4.1.3'","const V='4.1.4'",1)
+          s=s.replace("target()?panel():goMuted()","istarget()?panel():goMuted()")
+          s=s.replace("target()?manager():goMuted()","istarget()?manager():goMuted()")
+          s=s.replace("b.onclick=()=>target()?panel():goMuted()","b.onclick=()=>istarget()?panel():goMuted()")
+          s=s.replace("function manager(){document.getElementById(P+'-mgr')?.remove();","function manager(){if(!document.body)return;document.getElementById(P+'-mgr')?.remove();",1)
+          s=s.replace("function panel(){if(document.getElementById(P+'-panel'))return;","function panel(){if(!document.body||document.getElementById(P+'-panel'))return;",1)
+          s=s.replace("function mount(){if(istarget())panel();else document.getElementById(P+'-panel')?.remove()}","function mount(){if(!document.body)return;if(istarget())panel();else document.getElementById(P+'-panel')?.remove()}",1)
+          p.write_text(s,encoding='utf-8')
+          PY
+          node --check feedsieve-x-muted-zh.user.js
+          grep -q "@version      4.1.4" feedsieve-x-muted-zh.user.js
+          grep -q "istarget()?panel():goMuted()" feedsieve-x-muted-zh.user.js
+          grep -q "function mount(){if(!document.body)return;" feedsieve-x-muted-zh.user.js
+          if grep -q "target()?" feedsieve-x-muted-zh.user.js; then echo "stale target() callback remains"; exit 1; fi
+      - name: Commit hotfix
+        run: |
+          git config user.name "uumego"
+          git config user.email "206110a@gmail.com"
+          git add feedsieve-x-muted-zh.user.js
+          git diff --cached --quiet || git commit -m "Fix panel initialization and menu callbacks"
+          git push
