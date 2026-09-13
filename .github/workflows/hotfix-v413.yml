@@ -36,7 +36,6 @@ jobs:
           grep -q "@version      4.1.4" feedsieve-x-muted-zh.user.js
           grep -q "istarget()?panel():goMuted()" feedsieve-x-muted-zh.user.js
           grep -q "function mount(){if(!document.body)return;" feedsieve-x-muted-zh.user.js
-          if grep -q "target()?" feedsieve-x-muted-zh.user.js; then echo "stale target() callback remains"; exit 1; fi
       - name: Commit hotfix
         run: |
           git config user.name "uumego"
